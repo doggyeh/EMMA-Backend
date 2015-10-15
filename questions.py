@@ -87,7 +87,6 @@ def init(questions):
 
 # TODO:http://cloudacademy.com/blog/google-prediction-api/
 # TODO:http://blog.marchtea.com/archives/161
-# yahoo input
 def main():
     print "target question =",target_question
     features = init(target_question)
