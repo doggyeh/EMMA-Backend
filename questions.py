@@ -3,6 +3,8 @@ import nltk.tokenize
 import nltk.stem
 import nltk.tag
 import string
+import time
+import csv
 
 target_question = [
                     "How do I apply for a Citi Credit Card?",
@@ -35,8 +37,9 @@ lemmatizer = nltk.stem.wordnet.WordNetLemmatizer()
 
 # List the feature that matched for each question.
 def list_feature(question,features):
+    start_time = time.time()
     pos_b = nltk.pos_tag(tokenizer.tokenize(question))
-    tokens_b = [token.lower().strip(string.punctuation) for token, pos in pos_b if pos.startswith('N') and (token.lower().strip(string.punctuation) not in stopwords)]
+    tokens_b = [token.lower().strip(string.punctuation) for token, pos in pos_b if (token.lower().strip(string.punctuation) not in stopwords)]
     stems_b = [lemmatizer.lemmatize(token) for token in tokens_b if len(token) > 0]
 
     f = [0]*len(features)
@@ -45,41 +48,55 @@ def list_feature(question,features):
         if features[i] in stems_b:
             f[i]=1
             f_demo.append(features[i])
-    print f_demo,'for',question
-    # TODO: Send the features mapping result (f) to Google Predict API.
+    print f_demo,'for "',question,'"'
+    print f
+    # TODO: Send the features mapping result (f) to Google Prediction API.
+    elapsed_time = time.time() - start_time
+    print 'Execution time : %.3f' % (elapsed_time)
+    return f
 
-# Setting up the features all we got for later matching.
+# Output csv file for Model training.
+def output_csv(features,target_question):
+    feature1 = list(features)
+    feature1.insert(0,'class')
+    output = []
+    output.append(feature1)
+    
+    for i in range(len(target_question)):
+        f = list_feature(target_question[i],features)
+        f.insert(0,i)
+        output.append(f)
+
+    f = open("question.csv","w") 
+    w = csv.writer(f)
+    w.writerows(output)
+    f.close()
+
+# Setting up the features for later matching.
 def init(questions):
     features = []
     for question in questions:
         pos_a = nltk.pos_tag(tokenizer.tokenize(question))
-        tokens_a = [token.lower().strip(string.punctuation) for token, pos in pos_a if pos.startswith('N') and (token.lower().strip(string.punctuation) not in stopwords)]
+        tokens_a = [token.lower().strip(string.punctuation) for token, pos in pos_a if (token.lower().strip(string.punctuation) not in stopwords)]
         stems_a = [lemmatizer.lemmatize(token) for token in tokens_a if len(token) > 0]
         for stem in stems_a:
-            features.append(stem)
-    print 'features are',feautres
+            if stem not in features:
+                features.append(stem)
+    print '\nfeatures are',features
     return features
 
+# TODO:http://cloudacademy.com/blog/google-prediction-api/
+# TODO:http://blog.marchtea.com/archives/161
+# yahoo input
 def main():
     print "target question =",target_question
     features = init(target_question)
+    output_csv(features,target_question)
+    """
     while True:
-        question = raw_input("Ask me a question : ")
+        question = raw_input("\nAsk me a question : ")
         list_feature(question,features)
-
+    """
 
 if __name__ == '__main__':
     main()
-"""
-def get_wordnet_pos(pos_tag):
-	if pos_tag[1].startswith('J'):
-		return (pos_tag[0], wordnet.ADJ)
-	elif pos_tag[1].startswith('V'):
-		return (pos_tag[0], wordnet.VERB)
-	elif pos_tag[1].startswith('N'):
-		return (pos_tag[0], wordnet.NOUN)
-	elif pos_tag[1].startswith('R'):
-		return (pos_tag[0], wordnet.ADV)
-	else:
-		return (pos_tag[0], wordnet.NOUN)
-"""
