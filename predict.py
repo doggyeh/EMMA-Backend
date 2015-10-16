@@ -4,54 +4,41 @@ from googleapiclient import discovery
 from googleapiclient.errors import HttpError
 from oauth2client.client import SignedJwtAssertionCredentials
 
-"""Create and Training Model in Google Predicition API"""
+"""Make single prediction for each question"""
 
 #Project and model configuration
 project_id = '575046039409'
 model_id = 'question-model'
 
-def main():
-    """ Simple logic: train and make prediction """
-    #delete_model()
-    #train_model()
+def init_api():
     try:
-        make_prediction()
+        api = get_prediction_api()
     except HttpError as e: 
-        if e.resp.status == 404: #model does not exist
+        if e.resp.status == 404: #model does not exist, train it in google.py
             print("Model does not exist yet.")
-            train_model()
-            make_prediction()
-        else: #real error
+            exit()
+        else:
             print(e)
+    return api
 
 """ Use trained model to generate a new prediction """
-def make_prediction():
-
-    api = get_prediction_api()
-
-    print("Fetching model.")
-
+def make_prediction(api,feature):
+    #api = get_prediction_api()
+    #print("Fetching model.")
     model = api.trainedmodels().get(project=project_id, id=model_id).execute()
     if model.get('trainingStatus') != 'DONE':
         print("Model is (still) training. \nPlease wait and run me again!") #no polling
         exit()
+    #print("Model is ready.")
 
-    print("Model is ready.")
-
-    """
-    #Optionally analyze model stats (big json!)
-    analysis = api.trainedmodels().analyze(project=project_id, id=model_id).execute()
-    print(analysis)
-    exit()
-    """
-    ##read new record from local file
-    with open('record.csv') as f:
-        record = f.readline().split(',') #csv
+    #read new record from local file
+    #with open('record.csv') as f:
+     #   record = f.readline().split(',') #csv
 
     #obtain new prediction
     prediction = api.trainedmodels().predict(project=project_id, id=model_id, body={
         'input': {
-                'csvInstance': record
+                'csvInstance': feature
         },
     }).execute()
 
@@ -59,26 +46,9 @@ def make_prediction():
     label = prediction.get('outputLabel')
     stats = prediction.get('outputMulti')
 
-    print("You asking question %s" % label)
-    print(stats)
-
-""" Create new classification model """
-def train_model():
-
-    api = get_prediction_api()
-
-    print("Creating new Model.")
-
-    api.trainedmodels().insert(project=project_id, body={
-            'id': model_id,
-            'storageDataLocation': 'ml-data/question.csv',
-            'modelType': 'CLASSIFICATION'
-    }).execute()
-
-def delete_model():
-    api = get_prediction_api()
-    print("Deleting Model.")
-    api.trainedmodels().delete(project=project_id, id = model_id).execute()
+    #print("You asking question %s" % label)
+    #print(stats)
+    return label
 
 def get_prediction_api(service_account=True):
     scope = [
