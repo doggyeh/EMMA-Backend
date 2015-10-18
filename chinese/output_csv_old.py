@@ -133,7 +133,7 @@ def init():
     #return features
 
 def main():
-    init()
+    #init()
     output_csv()
 
 if __name__ == '__main__':

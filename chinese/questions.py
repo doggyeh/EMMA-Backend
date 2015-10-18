@@ -6,49 +6,60 @@ import nltk.tokenize
 import nltk.stem
 import nltk.tag
 import string
-import time
 import csv,cStringIO,codecs
 import jieba
-from predict import init_api,make_prediction
+from svmutil import *
+import os.path
 
 """Main Activity to answer question for user"""
 # TODO:improve the Machine Learning Model by user feedback.
 
 mydict = {} #question database
 
-# Get default English stopwords and extend with punctuation
 stopwords = [u'／', u'，', u'。', u'、', u'；', u'：', u'？', u'「', u'」']
 stopwords.extend(string.punctuation)
 
 # List the feature that matched for each question.
-def list_feature(question,features,api,mydict,DBG):
-    start_time = time.time()
+def list_feature(question,features,m,mydict,DBG):
     jieba.load_userdict('bankdict.txt')
     tokens_b = [token.strip(string.punctuation) for token in jieba.cut_for_search(question) if (token.strip(string.punctuation) not in stopwords)]
-    f = [0]*len(features)
+    f = {}
     #f_demo  = []
     for token in tokens_b:
         if token in features:
-            f[features.index(token)]=1
+            f[features.index(token)+1]=1
             #f_demo.append(token)
     #print f_demo,'for "',question,'"'
-    #print f
+    print f
     if DBG:
         print 'Matched :',(',').join(tokens_b)
-    elapsed_time = time.time() - start_time
-    if DBG:
-        print 'Execution local time : %.3f' % (elapsed_time)
 
-    label = make_prediction(api,f)
+    #x0, max_idx = gen_svm_nodearray({1:1, 3:1})
+    x0, max_idx = gen_svm_nodearray(f)
+    label = libsvm.svm_predict(m, x0)
+    print label
+
     if label not in mydict:
         print "Sorry, I don't understand your question."
     else:
         if DBG:
             print 'You are asking :',mydict[label]
-        elapsed_time = time.time() - start_time
-        if DBG:
-            print 'Execution total time : %.3f' % (elapsed_time)
     #return f
+
+#Get libsvm model.
+def get_model():
+    if not os.path.exists('question_chinese.model'):
+        y, x = svm_read_problem('question_chinese')
+        m = svm_train(y, x, '-c 0.03125 -g 0.0078125')
+        svm_save_model('question_chinese.model', m)
+        return m
+    else:
+        m = svm_load_model('question_chinese.model')
+        y, x = svm_read_problem('question_chinese')
+        print y,x
+        p_label, p_acc, p_val = svm_predict(y, x, m)
+        print p_label,p_acc
+        return m
 
 # Setting up the features for later matching.
 def init():
@@ -64,21 +75,20 @@ def init():
 
 def main():
     features = init()
-    api = init_api()
+    m=get_model()
     #Read the question database
     with open('raw_question_chinese.csv', mode='r') as file:
         reader = csv.reader(file)
-        mydict = {rows[0]:rows[1] for rows in reader}
+        mydict = {float(rows[0]):rows[1] for rows in reader}
     file.close()
     #print mydict
     print ("\n").join(mydict.values())
-    #Make a predicition in initial stage so the later predicitions will be faster by 10x
-    list_feature(mydict['20'],features,api,mydict,False)
 
+    list_feature(mydict[20],features,m,mydict,False)
     #Start answering question
-    while True:
-        question = raw_input("\nAsk me a question : ")
-        list_feature(question.replace(' ',''),features,api,mydict,True)
+    #while True:
+    #    question = raw_input("\nAsk me a question : ")
+    #    list_feature(question.replace(' ',''),features,m,mydict,True)
 
 class UTF8Recoder:
     def __init__(self, f, encoding):
