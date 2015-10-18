@@ -8,7 +8,7 @@ import nltk.tag
 import string
 import jieba
 import cStringIO,codecs,csv
-"""Output .cvs file for Machine Learning model training"""
+"""Output question_chinese.cvs file for Machine Learning model training"""
 
 # Get default English stopwords and extend with punctuation
 stopwords = [u'／', u'，', u'。', u'、', u'；', u'：', u'？', u'「', u'」']
@@ -53,7 +53,7 @@ def output_csv():
     with open('raw_question_chinese.csv', mode='r') as file:
         for row in csv.reader(file):
             question = row[1]
-            f = list_feature(question,features)
+            f = list_feature(question.replace(' ',''),features)
             f.insert(0,row[0])
             output.append(f)
     file.close()

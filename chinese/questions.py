@@ -33,6 +33,8 @@ def list_feature(question,features,api,mydict,DBG):
             #f_demo.append(token)
     #print f_demo,'for "',question,'"'
     #print f
+    if DBG:
+        print 'Matched :',(',').join(tokens_b)
     elapsed_time = time.time() - start_time
     if DBG:
         print 'Execution local time : %.3f' % (elapsed_time)
@@ -76,7 +78,7 @@ def main():
     #Start answering question
     while True:
         question = raw_input("\nAsk me a question : ")
-        list_feature(question,features,api,mydict,True)
+        list_feature(question.replace(' ',''),features,api,mydict,True)
 
 class UTF8Recoder:
     def __init__(self, f, encoding):
