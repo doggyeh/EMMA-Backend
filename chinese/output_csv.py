@@ -38,10 +38,10 @@ def list_feature(question,features,synonyms):
     return f
 
 # Output csv file
-def output_csv():
+def output_csv(classes):
     features = []
     synonyms = []
-    synonyms1 = []
+    synonyms1 = {}
     with open('synonyms.csv', mode='r') as file:
         reader = UnicodeReader(file)
         for row in reader:
@@ -71,7 +71,7 @@ def output_csv():
     feature_final.append(feature1)
     output = []
     #output.append(feature1)
-
+    """
     with open('raw_question_chinese.csv', mode='r') as file:
         for row in csv.reader(file):
             question = row[1]
@@ -79,6 +79,24 @@ def output_csv():
             f.insert(0,row[0])
             output.append(f)
     file.close()
+    """
+    i = 0
+    with open('feature_chinese_fix.csv','r') as file:
+        reader = UnicodeReader(file)
+        for row in reader:
+            f = [0]*len(features)
+            for token in row:
+                if token in features:
+                    f[features.index(token)]=1
+            for key, texts in synonyms1.items():
+                for token in row:
+                    if token in texts:
+                        f[key]=1
+            f.insert(0,classes[i])
+            i+=1
+            #print f
+            output.append(f)
+    
     with open('question_chinese.csv', mode='w') as file:
         w = UnicodeWriter(file)
         w.writerows(feature_final)
@@ -131,10 +149,12 @@ class UnicodeWriter:
 # Setting up the features for later matching.
 def init():
     features = []
+    classes = []
     #load special word for bank
     jieba.load_userdict('bankdict.txt')
     with open('raw_question_chinese.csv', mode='r') as file:
-        for row in csv.reader(file):  
+        for row in csv.reader(file):
+            classes.append(row[0])
             question = row[1]
             #test = jieba.cut_for_search(question)
             #print(", ".join(test))
@@ -150,13 +170,14 @@ def init():
         w = UnicodeWriter(file)
         w.writerows(features)
     file.close()
+    return classes
     #print (",".join(features))
     #print features
     #return features
 
 def main():
-    init()
-    output_csv()
+    classes = init()
+    output_csv(classes)
 
 if __name__ == '__main__':
     main()

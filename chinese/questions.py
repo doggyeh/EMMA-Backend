@@ -36,8 +36,8 @@ def list_feature(question,features,api,mydict,synonyms,DBG):
                     f_demo.append(token)
 
     #print f_demo,'for "',question,'"'
-    if DBG:
-        print f
+    #if DBG:
+    #    print f
     if DBG:
         #print 'Matched :',(',').join(tokens_b)
         print 'Matched :',(',').join(f_demo)
@@ -63,7 +63,7 @@ def init():
     mydict = {}
     with open('raw_question_chinese.csv', mode='r') as file:
         reader = csv.reader(file)
-        mydict = {rows[0]:rows[1] for rows in reader if rows[0] not in mydict}
+        mydict = {rows[0]:rows[1] for rows in reader}
     file.close()
 
     #Read the question database
