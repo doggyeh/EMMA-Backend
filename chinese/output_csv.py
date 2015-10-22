@@ -16,7 +16,7 @@ stopwords.extend(string.punctuation)
 
 
 #List the feature that matched for each question.
-def list_feature(question,features):
+def list_feature(question,features,synonyms):
     #load special word for bank
     jieba.load_userdict('bankdict.txt')
     tokens_b = [token.strip(string.punctuation) for token in jieba.cut_for_search(question) if (token.strip(string.punctuation) not in stopwords)]
@@ -28,6 +28,11 @@ def list_feature(question,features):
         if token in features:
             f[features.index(token)]=1
             f_demo.append(token)
+    for key, texts in synonyms.items():
+        for token in tokens_b:
+            if f[key] == 0:
+                if token in texts:
+                    f[key]=1
     print (',').join(f_demo),'for "',question,'"'
     #print f
     return f
@@ -35,14 +40,31 @@ def list_feature(question,features):
 # Output csv file
 def output_csv():
     features = []
+    synonyms = []
+    synonyms1 = []
+    with open('synonyms.csv', mode='r') as file:
+        reader = UnicodeReader(file)
+        for row in reader:
+            features.append(row[1])
+            for text in row[1:]:
+                synonyms.append(text)
+    file.close()
+    
+    with open('synonyms.csv', mode='r') as file:
+        reader = UnicodeReader(file)
+        synonyms1 = {int(float(rows[0])):rows[1:] for rows in reader}
+    file.close()
+    
     with open('feature_chinese_fix.csv','r') as file:
         reader = UnicodeReader(file)
         for row in reader:
             for token in row:
-                if token not in features:
+                if token not in features and token not in synonyms:
                     features.append(token)
     #print features
+    print (',').join(synonyms)
     #print (',').join(features)
+    
     feature1 = list(features)
     feature1.insert(0,'class')
     feature_final = []
@@ -53,7 +75,7 @@ def output_csv():
     with open('raw_question_chinese.csv', mode='r') as file:
         for row in csv.reader(file):
             question = row[1]
-            f = list_feature(question.replace(' ',''),features)
+            f = list_feature(question.replace(' ',''),features,synonyms1)
             f.insert(0,row[0])
             output.append(f)
     file.close()
@@ -133,7 +155,7 @@ def init():
     #return features
 
 def main():
-    #init()
+    init()
     output_csv()
 
 if __name__ == '__main__':

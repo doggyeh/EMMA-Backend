@@ -12,7 +12,10 @@ model_id = 'question-chinese-model'
 
 def main():
     """ Simple logic: train and make prediction """
-    #delete_model()
+
+    print "Remember to update question_chinese.csv to google drive first!!!"
+
+    delete_model()
     #train_model()
     try:
         make_prediction()

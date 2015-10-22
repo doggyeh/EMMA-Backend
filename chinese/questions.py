@@ -14,27 +14,33 @@ from predict import init_api,make_prediction
 """Main Activity to answer question for user"""
 # TODO:improve the Machine Learning Model by user feedback.
 
-mydict = {} #question database
-
 # Get default English stopwords and extend with punctuation
-stopwords = [u'／', u'，', u'。', u'、', u'；', u'：', u'？', u'「', u'」']
+stopwords = [u')', u'(', u'／', u'，', u'。', u'、', u'；', u'：', u'？', u'「', u'」']
 stopwords.extend(string.punctuation)
 
 # List the feature that matched for each question.
-def list_feature(question,features,api,mydict,DBG):
+def list_feature(question,features,api,mydict,synonyms,DBG):
     start_time = time.time()
-    jieba.load_userdict('bankdict.txt')
     tokens_b = [token.strip(string.punctuation) for token in jieba.cut_for_search(question) if (token.strip(string.punctuation) not in stopwords)]
     f = [0]*len(features)
-    #f_demo  = []
+    f_demo  = []
     for token in tokens_b:
         if token in features:
             f[features.index(token)]=1
-            #f_demo.append(token)
+            f_demo.append(token)
+    for key, texts in synonyms.items():
+        for token in tokens_b:
+            if f[key] == 0:
+                if token in texts:
+                    f[key]=1
+                    f_demo.append(token)
+
     #print f_demo,'for "',question,'"'
-    #print f
     if DBG:
-        print 'Matched :',(',').join(tokens_b)
+        print f
+    if DBG:
+        #print 'Matched :',(',').join(tokens_b)
+        print 'Matched :',(',').join(f_demo)
     elapsed_time = time.time() - start_time
     if DBG:
         print 'Execution local time : %.3f' % (elapsed_time)
@@ -52,6 +58,21 @@ def list_feature(question,features,api,mydict,DBG):
 
 # Setting up the features for later matching.
 def init():
+
+    #Read the question database
+    mydict = {}
+    with open('raw_question_chinese.csv', mode='r') as file:
+        reader = csv.reader(file)
+        mydict = {rows[0]:rows[1] for rows in reader if rows[0] not in mydict}
+    file.close()
+
+    #Read the question database
+    synonyms = {}
+    with open('synonyms.csv', mode='r') as file:
+        reader = UnicodeReader(file)
+        synonyms = {int(float(rows[0])):rows[1:] for rows in reader}
+    file.close()
+
     features = []
     with open('question_chinese.csv', mode='r') as file:
         reader = UnicodeReader(file)
@@ -60,25 +81,26 @@ def init():
             break
     file.close()
     #print '\nfeatures are',features
-    return features
+    return mydict,synonyms,features
 
 def main():
-    features = init()
+    jieba.load_userdict('bankdict.txt')
+    mydict,synonyms,features = init()
     api = init_api()
-    #Read the question database
-    with open('raw_question_chinese.csv', mode='r') as file:
-        reader = csv.reader(file)
-        mydict = {rows[0]:rows[1] for rows in reader}
-    file.close()
+
     #print mydict
     print ("\n").join(mydict.values())
+    #print synonyms
+    #for list in synonyms.values():
+    #    print (",").join(list)
+
     #Make a predicition in initial stage so the later predicitions will be faster by 10x
-    list_feature(mydict['20'],features,api,mydict,False)
+    list_feature(mydict['20'],features,api,mydict,synonyms,False)
 
     #Start answering question
     while True:
         question = raw_input("\nAsk me a question : ")
-        list_feature(question.replace(' ',''),features,api,mydict,True)
+        list_feature(question.replace(' ',''),features,api,mydict,synonyms,True)
 
 class UTF8Recoder:
     def __init__(self, f, encoding):
