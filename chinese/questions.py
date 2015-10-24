@@ -10,6 +10,7 @@ import time
 import csv,cStringIO,codecs
 import jieba
 from predict import init_api,make_prediction
+from snownlp import SnowNLP
 
 """Main Activity to answer question for user"""
 # TODO:improve the Machine Learning Model by user feedback.
@@ -19,26 +20,66 @@ stopwords = [u')', u'(', u'／', u'，', u'。', u'、', u'；', u'：', u'？',
 stopwords.extend(string.punctuation)
 YES = ['y','ye','yes']
 NO = ['n','no']
+WORD = ['掉了','弄丟']
 
 # List the feature that matched for each question.
-def list_feature(question,features,api,mydict,synonyms,DBG):
+def list_feature(question,features,features_pinyin,api,mydict,synonyms,synonyms_pinyin,DBG):
     start_time = time.time()
-    tokens_b = [token.strip(string.punctuation) for token in jieba.cut_for_search(question) if (token.strip(string.punctuation) not in stopwords)]
+    tokens_b = [token.strip(string.punctuation) for token in jieba.cut(question) if (token.strip(string.punctuation) not in stopwords)]
+    print ','.join(tokens_b)
+    tokens_c = [] #for spell check
+    last_match = 0 #for spell check
+
     f = [0]*len(features)
     f_demo  = []
     for token in tokens_b:
+        print '',token
+        index = tokens_b.index(token)
+
         if token in features:
             f[features.index(token)]=1
             f_demo.append(token)
-    for key, texts in synonyms.items():
-        for token in tokens_b:
+            print '',index,last_match
+            if index > last_match:
+                tokens_c.append(''.join(tokens_b[last_match:index]))
+                last_match=index+1
+
+        #Start check for synonyms
+        for key, texts in synonyms.items():
+        #for token in tokens_b:
             if f[key] == 0:
                 if token in texts:
                     f[key]=1
                     f_demo.append(token)
+                    print '',index,last_match
+                    if index > last_match:
+                        tokens_c.append(''.join(tokens_b[last_match:index]))
+                        last_match=index+1
+
+        if index == len(tokens_b)-1 and token not in f_demo:
+            tokens_c.append(''.join(tokens_b[last_match:index+1]))
+
+    #Doing spell check.
+    print 'robin',(',').join(tokens_c)
+    for token in tokens_c:
+        s = SnowNLP(SnowNLP(token).han).pinyin
+        print s
+        s_check=[]
+        #features length from 2~4
+        for i in range(1,4):
+            s_check+=([('').join(s[j:j+i+1]) for j in range(len(s)-1) if j+i < len(s)])
+        print s_check
+        for spell in s_check:
+            if spell in features_pinyin:
+                f[features_pinyin.index(spell)]=1
+                f_demo.append(features[features_pinyin.index(spell)])
+            for key, texts in synonyms_pinyin.items():
+                if f[key] == 0:
+                    if spell in texts:
+                        f[key]=1
+                        f_demo.append(synonyms[key][0])
 
     #print f_demo,'for "',question,'"'
-    #print ','.join(tokens_b)
     #if DBG:
     #    print f
     if DBG:
@@ -46,7 +87,7 @@ def list_feature(question,features,api,mydict,synonyms,DBG):
         print 'Matched :',(',').join(f_demo)
     #    elapsed_time = time.time() - start_time
     #    print 'Execution local time : %.3f' % (elapsed_time)
-
+"""
     label,stats = make_prediction(api,f)
     if DBG:
         elapsed_time = time.time() - start_time
@@ -71,7 +112,7 @@ def list_feature(question,features,api,mydict,synonyms,DBG):
                 w.writerows(result)
         #TODO dealt with wrong guess
     #return f
-
+"""
 # Setting up the features for later matching.
 def init():
 
@@ -98,11 +139,25 @@ def init():
             break
     file.close()
     #print '\nfeatures are',features
-    return mydict,synonyms,features
+
+    features_pinyin = []
+    for feature in features:
+        #Translate feature into Simple Chinese then get how to spell it.
+        s = ''.join(SnowNLP(SnowNLP(feature).han).pinyin)
+        print feature,s
+        features_pinyin.append(s)
+
+    synonyms_pinyin={}
+    for key, texts in synonyms.items():
+        synonyms_pinyin[key] = [''.join(SnowNLP(SnowNLP(text).han).pinyin) for text in texts]
+
+    return mydict,synonyms,synonyms_pinyin,features,features_pinyin
 
 def main():
     jieba.load_userdict('bankdict.txt')
-    mydict,synonyms,features = init()
+    for word in WORD:
+        jieba.add_word(word)
+    mydict,synonyms,synonyms_pinyin,features,features_pinyin = init()
     api = init_api()
 
     #print mydict
@@ -112,7 +167,7 @@ def main():
     #    print (",").join(list)
 
     #Make a predicition in initial stage so the later predicitions will be faster by 10x
-    list_feature(mydict['20'],features,api,mydict,synonyms,False)
+    list_feature(mydict['20'],features,features_pinyin,api,mydict,synonyms,synonyms_pinyin,False)
     #for q in mydict.values():
     #    list_feature(q,features,api,mydict,synonyms,False)
 
@@ -121,7 +176,7 @@ def main():
         question = raw_input("\nAsk me a question : ")
         if question == 'exit':
             break
-        list_feature(question.replace(' ',''),features,api,mydict,synonyms,True)
+        list_feature(question.replace(' ',''),features,features_pinyin,api,mydict,synonyms,synonyms_pinyin,True)
 
 class UTF8Recoder:
     def __init__(self, f, encoding):

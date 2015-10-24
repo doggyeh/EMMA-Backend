@@ -20,7 +20,7 @@ def main():
     try:
         #print 'test'
         make_prediction()
-    except HttpError as e: 
+    except HttpError as e:
         if e.resp.status == 404: #model does not exist
             print("Model does not exist yet.")
             train_model()

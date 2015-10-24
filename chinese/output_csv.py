@@ -19,7 +19,7 @@ stopwords.extend(string.punctuation)
 def list_feature(question,features,synonyms):
     #load special word for bank
     jieba.load_userdict('bankdict.txt')
-    tokens_b = [token.strip(string.punctuation) for token in jieba.cut_for_search(question) if (token.strip(string.punctuation) not in stopwords)]
+    tokens_b = [token.strip(string.punctuation) for token in jieba.cut(question) if (token.strip(string.punctuation) not in stopwords)]
     #print (',').join(tokens_b)
 
     f = [0]*len(features)
@@ -156,9 +156,9 @@ def init():
         for row in csv.reader(file):
             classes.append(row[0])
             question = row[1]
-            #test = jieba.cut_for_search(question)
+            #test = jieba.cut(question)
             #print(", ".join(test))
-            tokens_a = [token.strip(string.punctuation) for token in jieba.cut_for_search(question) if (token.strip(string.punctuation) not in stopwords)]
+            tokens_a = [token.strip(string.punctuation) for token in jieba.cut(question) if (token.strip(string.punctuation) not in stopwords)]
             """
             for token in tokens_a:
                 if token not in features:
