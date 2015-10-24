@@ -48,7 +48,7 @@ def make_prediction(api,feature):
 
     #print("You asking question %s" % label)
     #print(stats)
-    return label
+    return label,stats
 
 def get_prediction_api(service_account=True):
     scope = [

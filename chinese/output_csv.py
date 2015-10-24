@@ -49,12 +49,12 @@ def output_csv(classes):
             for text in row[1:]:
                 synonyms.append(text)
     file.close()
-    
+
     with open('synonyms.csv', mode='r') as file:
         reader = UnicodeReader(file)
         synonyms1 = {int(float(rows[0])):rows[1:] for rows in reader}
     file.close()
-    
+
     with open('feature_chinese_fix.csv','r') as file:
         reader = UnicodeReader(file)
         for row in reader:
@@ -62,9 +62,9 @@ def output_csv(classes):
                 if token not in features and token not in synonyms:
                     features.append(token)
     #print features
-    print (',').join(synonyms)
+    #print (',').join(synonyms)
     #print (',').join(features)
-    
+
     feature1 = list(features)
     feature1.insert(0,'class')
     feature_final = []
@@ -96,7 +96,7 @@ def output_csv(classes):
             i+=1
             #print f
             output.append(f)
-    
+
     with open('question_chinese.csv', mode='w') as file:
         w = UnicodeWriter(file)
         w.writerows(feature_final)

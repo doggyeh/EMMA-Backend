@@ -16,8 +16,9 @@ def main():
     print "Remember to update question_chinese.csv to google drive first!!!"
 
     delete_model()
-    #train_model()
+    train_model()
     try:
+        #print 'test'
         make_prediction()
     except HttpError as e: 
         if e.resp.status == 404: #model does not exist
