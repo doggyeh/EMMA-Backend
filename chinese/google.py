@@ -8,7 +8,7 @@ from oauth2client.client import SignedJwtAssertionCredentials
 
 #Project and model configuration
 project_id = '575046039409'
-model_id = 'question-chinese-model'
+model_id = 'question-chinese'
 
 def main():
     """ Simple logic: train and make prediction """
@@ -20,7 +20,7 @@ def main():
     try:
         #print 'test'
         make_prediction()
-    except HttpError as e: 
+    except HttpError as e:
         if e.resp.status == 404: #model does not exist
             print("Model does not exist yet.")
             train_model()

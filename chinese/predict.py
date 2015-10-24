@@ -8,7 +8,7 @@ from oauth2client.client import SignedJwtAssertionCredentials
 
 #Project and model configuration
 project_id = '575046039409'
-model_id = 'question-chinese-model'
+model_id = 'question-chinese'
 
 def init_api():
     try:
