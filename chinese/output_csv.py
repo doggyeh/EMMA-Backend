@@ -16,10 +16,10 @@ stopwords.extend(string.punctuation)
 
 
 #List the feature that matched for each question.
-def list_feature(question,features):
+def list_feature(question,features,synonyms):
     #load special word for bank
     jieba.load_userdict('bankdict.txt')
-    tokens_b = [token.strip(string.punctuation) for token in jieba.cut_for_search(question) if (token.strip(string.punctuation) not in stopwords)]
+    tokens_b = [token.strip(string.punctuation) for token in jieba.cut(question) if (token.strip(string.punctuation) not in stopwords)]
     #print (',').join(tokens_b)
 
     f = [0]*len(features)
@@ -28,35 +28,75 @@ def list_feature(question,features):
         if token in features:
             f[features.index(token)]=1
             f_demo.append(token)
+    for key, texts in synonyms.items():
+        for token in tokens_b:
+            if f[key] == 0:
+                if token in texts:
+                    f[key]=1
     print (',').join(f_demo),'for "',question,'"'
     #print f
     return f
 
 # Output csv file
-def output_csv():
+def output_csv(classes):
     features = []
+    synonyms = []
+    synonyms1 = {}
+    with open('synonyms.csv', mode='r') as file:
+        reader = UnicodeReader(file)
+        for row in reader:
+            features.append(row[1])
+            for text in row[1:]:
+                synonyms.append(text)
+    file.close()
+
+    with open('synonyms.csv', mode='r') as file:
+        reader = UnicodeReader(file)
+        synonyms1 = {int(float(rows[0])):rows[1:] for rows in reader}
+    file.close()
+
     with open('feature_chinese_fix.csv','r') as file:
         reader = UnicodeReader(file)
         for row in reader:
             for token in row:
-                if token not in features:
+                if token not in features and token not in synonyms:
                     features.append(token)
     #print features
+    #print (',').join(synonyms)
     #print (',').join(features)
+
     feature1 = list(features)
     feature1.insert(0,'class')
     feature_final = []
     feature_final.append(feature1)
     output = []
     #output.append(feature1)
-
+    """
     with open('raw_question_chinese.csv', mode='r') as file:
         for row in csv.reader(file):
             question = row[1]
-            f = list_feature(question.replace(' ',''),features)
+            f = list_feature(question.replace(' ',''),features,synonyms1)
             f.insert(0,row[0])
             output.append(f)
     file.close()
+    """
+    i = 0
+    with open('feature_chinese_fix.csv','r') as file:
+        reader = UnicodeReader(file)
+        for row in reader:
+            f = [0]*len(features)
+            for token in row:
+                if token in features:
+                    f[features.index(token)]=1
+            for key, texts in synonyms1.items():
+                for token in row:
+                    if token in texts:
+                        f[key]=1
+            f.insert(0,classes[i])
+            i+=1
+            #print f
+            output.append(f)
+
     with open('question_chinese.csv', mode='w') as file:
         w = UnicodeWriter(file)
         w.writerows(feature_final)
@@ -109,14 +149,16 @@ class UnicodeWriter:
 # Setting up the features for later matching.
 def init():
     features = []
+    classes = []
     #load special word for bank
     jieba.load_userdict('bankdict.txt')
     with open('raw_question_chinese.csv', mode='r') as file:
-        for row in csv.reader(file):  
+        for row in csv.reader(file):
+            classes.append(row[0])
             question = row[1]
-            #test = jieba.cut_for_search(question)
+            #test = jieba.cut(question)
             #print(", ".join(test))
-            tokens_a = [token.strip(string.punctuation) for token in jieba.cut_for_search(question) if (token.strip(string.punctuation) not in stopwords)]
+            tokens_a = [token.strip(string.punctuation) for token in jieba.cut(question) if (token.strip(string.punctuation) not in stopwords)]
             """
             for token in tokens_a:
                 if token not in features:
@@ -128,13 +170,14 @@ def init():
         w = UnicodeWriter(file)
         w.writerows(features)
     file.close()
+    return classes
     #print (",".join(features))
     #print features
     #return features
 
 def main():
-    init()
-    output_csv()
+    classes = init()
+    output_csv(classes)
 
 if __name__ == '__main__':
     main()
