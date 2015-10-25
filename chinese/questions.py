@@ -11,6 +11,7 @@ import csv,cStringIO,codecs
 import jieba
 from predict import init_api,make_prediction
 from snownlp import SnowNLP
+from nltk.metrics.distance import edit_distance
 
 """Main Activity to answer question for user"""
 # TODO:improve the Machine Learning Model by user feedback.
@@ -21,6 +22,15 @@ stopwords.extend(string.punctuation)
 YES = ['y','ye','yes']
 NO = ['n','no']
 WORD = ['掉了','弄丟']
+
+#Calculate distance between two pinyin.
+#It will lower the accuraty now, maybe use it in the future.
+def correct(spell,features):
+    for feature_pinyin in features:
+        if edit_distance(spell,feature_pinyin)/float(len(feature_pinyin)) < 0.25:
+            print spell,'similiar to',feature_pinyin
+            return True
+    return False
 
 # List the feature that matched for each question.
 def list_feature(question,features,features_pinyin,api,mydict,synonyms,synonyms_pinyin,DBG):
@@ -44,7 +54,7 @@ def list_feature(question,features,features_pinyin,api,mydict,synonyms,synonyms_
                 tokens_c.append(''.join(tokens_b[last_match:index]))
                 last_match=index+1
 
-        #Start check for synonyms
+        #Check for synonyms
         for key, texts in synonyms.items():
         #for token in tokens_b:
             if f[key] == 0:
@@ -59,7 +69,7 @@ def list_feature(question,features,features_pinyin,api,mydict,synonyms,synonyms_
         if index == len(tokens_b)-1 and token not in f_demo:
             tokens_c.append(''.join(tokens_b[last_match:index+1]))
 
-    #Doing spell check.
+    #Spell check.
     print 'robin',(',').join(tokens_c)
     for token in tokens_c:
         s = SnowNLP(SnowNLP(token).han).pinyin
@@ -85,12 +95,12 @@ def list_feature(question,features,features_pinyin,api,mydict,synonyms,synonyms_
     if DBG:
         #print 'Matched :',(',').join(tokens_b)
         print 'Matched :',(',').join(f_demo)
-    #    elapsed_time = time.time() - start_time
-    #    print 'Execution local time : %.3f' % (elapsed_time)
-"""
+        #elapsed_time = time.time() - start_time
+        #print 'Execution local time : %.3f' % (elapsed_time)
+
     label,stats = make_prediction(api,f)
     if DBG:
-        elapsed_time = time.time() - start_time
+        #elapsed_time = time.time() - start_time
         #print 'Execution total time : %.3f' % (elapsed_time)
 
         if label not in mydict:
@@ -114,7 +124,7 @@ def list_feature(question,features,features_pinyin,api,mydict,synonyms,synonyms_
                 w.writerows(result)
         #TODO dealt with wrong guess
     #return f
-"""
+
 # Setting up the features for later matching.
 def init():
 
