@@ -87,7 +87,7 @@ def list_feature(question,features,features_pinyin,api,mydict,synonyms,synonyms_
         print 'Matched :',(',').join(f_demo)
     #    elapsed_time = time.time() - start_time
     #    print 'Execution local time : %.3f' % (elapsed_time)
-
+"""
     label,stats = make_prediction(api,f)
     if DBG:
         elapsed_time = time.time() - start_time
@@ -114,7 +114,7 @@ def list_feature(question,features,features_pinyin,api,mydict,synonyms,synonyms_
                 w.writerows(result)
         #TODO dealt with wrong guess
     #return f
-
+"""
 # Setting up the features for later matching.
 def init():
 
