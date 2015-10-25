@@ -35,23 +35,22 @@ def list_feature(question,features,m,mydict,DBG):
         print 'Matched :',(',').join(tokens_b)
 
     #x0, max_idx = gen_svm_nodearray({1:1, 3:1})
-    x0, max_idx = gen_svm_nodearray(f)
-    label = libsvm.svm_predict(m, x0)
-    print label
-
-    if label not in mydict:
+    #x0, max_idx = gen_svm_nodearray(f)
+    y, x = [0], [{4:1, 26:1, 27:1}]
+    p_label, p_acc, p_val = svm_predict(y,x,m)
+    if p_label not in mydict:
         print "Sorry, I don't understand your question."
     else:
         if DBG:
-            print 'You are asking :',mydict[label]
+            print 'You are asking :',mydict[p_label]
     #return f
 
 #Get libsvm model.
 def get_model():
     if not os.path.exists('question_chinese.model'):
-        y, x = svm_read_problem('question_chinese')
-        m = svm_train(y, x, '-c 0.03125 -g 0.0078125')
-        svm_save_model('question_chinese.model', m)
+        y, x = svm_read_problem('question_chinese1')
+        m = svm_train(y, x, '-c 512.0 -g 0.0078125')
+        #svm_save_model('question_chinese.model', m)
         return m
     else:
         m = svm_load_model('question_chinese.model')

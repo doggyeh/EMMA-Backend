@@ -6,6 +6,8 @@ Put -1 as label index (argv[3]) if there are no labels in your file.
 Expecting no headers. If present, headers can be skipped with argv[4] == 1.
 
 """
+#python csv2libsvm.py question_chinese.csv question_chinese1 0 1
+#0 for class, 1 for headers
 
 import sys
 import csv

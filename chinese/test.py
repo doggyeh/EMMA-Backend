@@ -1,7 +1,7 @@
 from svmutil import *
 
 y, x = svm_read_problem('question_chinese')
-m = svm_train(y[:], x[:], '-c 4')
+m = svm_train(y[:], x[:], '-c 512.0 -g 0.0078125')
 p_label, p_acc, p_val = svm_predict(y[:], x[:], m)
 
 
