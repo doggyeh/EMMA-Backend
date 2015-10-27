@@ -37,7 +37,6 @@ def list_feature(question,features,features_pinyin,mydict,synonyms,synonyms_piny
     last_match = 0 #for spell check
     f = {}
     f_demo  = []
-
     for token in tokens_b:
         index = tokens_b.index(token)
 
@@ -47,16 +46,16 @@ def list_feature(question,features,features_pinyin,mydict,synonyms,synonyms_piny
             f_demo.append(token)
             if index > last_match:
                 tokens_c.append(''.join(tokens_b[last_match:index]))
-                last_match=index+1
-
-        #Check for synonyms
-        for key, texts in synonyms.items():
-            if key not in f:
-                if token in texts:
-                    f[key]=1
-                    f_demo.append(token)
-                    if index > last_match:
-                        tokens_c.append(''.join(tokens_b[last_match:index]))
+            last_match=index+1
+        else:
+            #Check for synonyms
+            for key, texts in synonyms.items():
+                if key not in f:
+                    if token in texts:
+                        f[key]=1
+                        f_demo.append(token)
+                        if index > last_match:
+                            tokens_c.append(''.join(tokens_b[last_match:index]))
                         last_match=index+1
 
         if index == len(tokens_b)-1 and token not in f_demo:
@@ -64,21 +63,22 @@ def list_feature(question,features,features_pinyin,mydict,synonyms,synonyms_piny
 
     #Spell check.
     #print 'robin',(',').join(tokens_c)
-    for token in tokens_c:
-        s = SnowNLP(SnowNLP(token).han).pinyin
-        s_check=[]
-        #features length from 2~4
-        for i in range(1,4):
-            s_check+=([('').join(s[j:j+i+1]) for j in range(len(s)-1) if j+i < len(s)])
-        for spell in s_check:
-            if spell in features_pinyin:
-                f[features_pinyin.index(spell)]=1
-                f_demo.append(features[features_pinyin.index(spell)])
-            for key, texts in synonyms_pinyin.items():
-                if key not in f:
-                    if spell in texts:
-                        f[key]=1
-                        f_demo.append(synonyms[key][0])
+    if tokens_c:
+        for token in tokens_c:
+            s = SnowNLP(SnowNLP(token).han).pinyin
+            s_check=[]
+            #features length from 2~4
+            for i in range(1,4):
+                s_check+=([('').join(s[j:j+i+1]) for j in range(len(s)-1) if j+i < len(s)])
+            for spell in s_check:
+                if spell in features_pinyin:
+                    f[features_pinyin.index(spell)]=1
+                    f_demo.append(features[features_pinyin.index(spell)])
+                for key, texts in synonyms_pinyin.items():
+                    if key not in f:
+                        if spell in texts:
+                            f[key]=1
+                            f_demo.append(synonyms[key][0])
 
     #print f_demo,'for "',question,'"'
     if DBG:
@@ -89,7 +89,9 @@ def list_feature(question,features,features_pinyin,mydict,synonyms,synonyms_piny
 
     #label,stats = make_prediction(api,f)
     #y, x = [0], [{4:1, 26:1, 27:1}]
-    p_label, p_acc, p_val = svm_predict([0],[f],m)
+    p_label, p_acc, p_val = svm_predict([0],[f],m,'-b 1 -q')
+    print p_val,len(p_val)
+    print p_label,p_val[0][int(p_label[0])-1]
 
     #Print result
     if DBG:
@@ -120,7 +122,7 @@ def list_feature(question,features,features_pinyin,mydict,synonyms,synonyms_piny
 def get_model():
     if not os.path.exists('question_chinese.model'):
         y, x = svm_read_problem('question_chinese1')
-        m = svm_train(y, x, '-c 8.0 -g 0.5')
+        m = svm_train(y, x, '-c 8.0 -g 0.5 -b 1')
         #svm_save_model('question_chinese.model', m)
         return m
     else:
