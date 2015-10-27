@@ -1,10 +1,9 @@
 # NLP-ML
-Natural Language Processing and Machine Learning for Citi Mobile Challenge</br>
+Natural Language Processing and Machine Learning for Citi Mobile Challenge
 
-Ask EMMA a question and she will classify it to a current question in database.</br>
-Support English and Chinese now.</br>
+Ask EMMA a question and she will classify it to a current question in database.
+Support English and Chinese now.
 
-Start by "python questions.py"</br>
+Start by questions.py
 
-sample questions from : https://www.citibank.com.au/aus/credit_cards/cards_faqs.htm</br>
-Chinese questions : http://www.esunbank.com.tw/service/faq,creditcard.aspx</br>
+'libsvm' branch use libsvm for Machine Learning and 'master' branch use Google Prediction API instead.
