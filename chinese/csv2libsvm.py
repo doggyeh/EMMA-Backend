@@ -29,7 +29,7 @@ def construct_line( label, line ):
 	return new_line
 
 # ---
-
+print"python csv2libsvm.py question_chinese.csv question_chinese 0 1"
 input_file = sys.argv[1]
 output_file = sys.argv[2]
 

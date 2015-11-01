@@ -83,20 +83,23 @@ def list_feature(question,features,features_pinyin,mydict,synonyms,synonyms_piny
     #print f_demo,'for "',question,'"'
     if DBG:
         #print ','.join(features)
-        #print f
+        print f
         #print 'Matched :',(',').join(tokens_b)
         print 'Matched :',(',').join(f_demo)
 
     #label,stats = make_prediction(api,f)
     #y, x = [0], [{4:1, 26:1, 27:1}]
     p_label, p_acc, p_val = svm_predict([0],[f],m,'-b 1 -q')
-    print p_val,len(p_val)
-    print p_label,p_val[0][int(p_label[0])-1]
+    #print p_val,len(p_val)
+    #print p_label,p_val[0][int(p_label[0])-1]
+        #Print result
 
-    #Print result
     if DBG:
         elapsed_time = time.time() - start_time
         print 'Execution time : %.3f' % (elapsed_time)
+        for i in range(len(p_val[0])):
+            if p_val[0][i]>0.025:
+                print i+1,mydict[i+1],p_val[0][i]
 
         print '='*80
         print 'You are asking :',mydict[p_label[0]]
@@ -116,7 +119,7 @@ def list_feature(question,features,features_pinyin,mydict,synonyms,synonyms_piny
                 w = UnicodeWriter(file)
                 w.writerows(result)
         #TODO dealt with wrong guess
-    #return f
+    return mydict[p_label[0]]
 
 #Get libsvm model.
 def get_model():
@@ -127,14 +130,18 @@ def get_model():
         return m
     else:
         m = svm_load_model('question_chinese.model')
-        y, x = svm_read_problem('question_chinese1')
-        print y,x
-        p_label, p_acc, p_val = svm_predict(y, x, m)
-        print p_label,p_acc
+        #y, x = svm_read_problem('question_chinese1')
+        #print y,x
+        #p_label, p_acc, p_val = svm_predict(y, x, m)
+        #print p_label,p_acc
         return m
 
 # Setting up the features for later matching.
 def init():
+
+    jieba.load_userdict('bankdict.txt')
+    for word in WORD:
+        jieba.add_word(word)
 
     #Read the question database
     mydict = {}
@@ -164,7 +171,7 @@ def init():
     for feature in features:
         #Translate feature into Simple Chinese then get how to spell it.
         s = ''.join(SnowNLP(SnowNLP(feature).han).pinyin)
-        print feature,s
+        #print feature,s
         features_pinyin.append(s)
 
     synonyms_pinyin={}
@@ -174,14 +181,11 @@ def init():
     return mydict,synonyms,synonyms_pinyin,features,features_pinyin
 
 def main():
-    jieba.load_userdict('bankdict.txt')
-    for word in WORD:
-        jieba.add_word(word)
     mydict,synonyms,synonyms_pinyin,features,features_pinyin = init()
     m = get_model()
 
     #print mydict
-    print ("\n").join(mydict.values())
+    #print ("\n").join(mydict.values())
     #print synonyms
     #for list in synonyms.values():
     #    print (",").join(list)
