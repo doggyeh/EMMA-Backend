@@ -2,6 +2,8 @@
 from flask import Flask, jsonify,abort,request
 from questions import init,get_model,list_feature
 
+#pagekite for public
+#pagekite.py 5000 doggyeh.pagekite.me
 app = Flask(__name__)
 
 mydict,synonyms,synonyms_pinyin,features,features_pinyin = init()

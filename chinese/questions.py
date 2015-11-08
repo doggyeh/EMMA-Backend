@@ -125,7 +125,7 @@ def list_feature(question,features,features_pinyin,mydict,synonyms,synonyms_piny
 def get_model():
     if not os.path.exists('question_chinese.model'):
         y, x = svm_read_problem('question_chinese1')
-        m = svm_train(y, x, '-c 8.0 -g 0.5 -b 1')
+        m = svm_train(y, x, '-c 32.0 -g 0.0078125 -b 1')
         #svm_save_model('question_chinese.model', m)
         return m
     else:

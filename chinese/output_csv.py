@@ -8,6 +8,7 @@ import nltk.tag
 import string
 import jieba
 import cStringIO,codecs,csv
+from csv2libsvm import output
 """Output question_chinese.cvs file for Machine Learning model training"""
 
 # Get default English stopwords and extend with punctuation
@@ -178,6 +179,7 @@ def init():
 def main():
     classes = init()
     output_csv(classes)
+    output()
 
 if __name__ == '__main__':
     main()
