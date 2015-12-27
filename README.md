@@ -1,5 +1,5 @@
 # NLP-ML
-Natural Language Processing and Machine Learning for Citi Mobile Challenge
+Natural Language Processing and Machine Learning for Citi Mobile Challenge plus simple RESTful API to communicate with Android app.
 
 Ask EMMA a question and she will classify it to a current question in database.
 Support English and Chinese now.
