@@ -21,8 +21,8 @@ def init_api():
             print(e)
     return api
 
+def make_prediction(api, feature):
 """ Use trained model to generate a new prediction """
-def make_prediction(api,feature):
     #api = get_prediction_api()
     #print("Fetching model.")
     model = api.trainedmodels().get(project=project_id, id=model_id).execute()

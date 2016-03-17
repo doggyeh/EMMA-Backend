@@ -24,9 +24,8 @@ def main():
         else: #real error
             print(e)
 
-""" Use trained model to generate a new prediction """
 def make_prediction():
-
+""" Use trained model to generate a new prediction """
     api = get_prediction_api()
 
     print("Fetching model.")
@@ -63,9 +62,8 @@ def make_prediction():
     print("You asking question %s" % label)
     print(stats)
 
-""" Create new classification model """
 def train_model():
-
+""" Create new classification model """
     api = get_prediction_api()
 
     print("Creating new Model.")
@@ -88,8 +86,8 @@ def get_prediction_api(service_account=True):
     ]
     return get_api('prediction', scope, service_account)
 
-""" Build API client based on oAuth2 authentication"""
 def get_api(api, scope, service_account=True):
+""" Build API client based on oAuth2 authentication"""
     with open("NLP-ML-bb13b6a378ae.json") as f:
         data = json.load(f)
         client_email = data['client_email']

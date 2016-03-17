@@ -1,75 +1,83 @@
 #!usr/bin/python
 # encoding=utf-8
 # coding=utf-8
-import string
-import time
-import csv,cStringIO,codecs
-import jieba
-from snownlp import SnowNLP
-from nltk.metrics.distance import edit_distance
-from svmutil import *
-import os.path
 
-"""Main Activity to answer question for user"""
-# TODO:improve the Machine Learning Model by user feedback.
+"""Main Activity to answer question for user."""
+
+import codecs
+import csv
+import cStringIO
+import jieba
+import string
+import sys
+import time
+import os.path
+from snownlp import SnowNLP
+from svmutil import *
+from nltk.metrics.distance import edit_distance
 
 # Set stopwords and extend with punctuation
 stopwords = [u')', u'(', u'／', u'，', u'。', u'、', u'；', u'：', u'？', u'「', u'」']
 stopwords.extend(string.punctuation)
-YES = ['y','ye','yes']
-NO = ['n','no']
-WORD = ['掉了','弄丟']
+YES = ['y', 'ye', 'yes']
+NO = ['n', 'no']
 
-#Calculate distance between two pinyin.
-#It will lower the accuraty now, maybe use it in the future.
 def correct(spell,features):
+    """
+    Calculate distance between two pinyin.
+    It will lower the accuraty now, might be used it in the future.
+    """
     for feature_pinyin in features:
-        if edit_distance(spell,feature_pinyin)/float(len(feature_pinyin)) < 0.25:
-            print spell,'similiar to',feature_pinyin
+        if edit_distance(spell, feature_pinyin) / float(len(feature_pinyin)) < 0.25:
+            print '%s similiar to %s' % (spell, feature_pinyin)
             return True
     return False
 
-# List the feature that matched for each question.
-def list_feature(question,features,features_pinyin,mydict,synonyms,synonyms_pinyin,m,DBG):
+def list_feature(question, init_value, m, DBG):
+    """List the feature that matched for each question."""
+    mydict,synonyms,synonyms_pinyin,features,features_pinyin = init_value
     start_time = time.time()
+    # Cut question into tokens and strip stopwords.
     tokens_b = [token.strip(string.punctuation) for token in jieba.cut(question) if (token.strip(string.punctuation) not in stopwords)]
-    tokens_c = [] #for spell check
-    last_match = 0 #for spell check
-    f = {}
+    tokens_c = []   #for spell check
+    last_match = 0  #for spell check
+    f = {}  # Record the features this question match.
     f_demo  = []
     for token in tokens_b:
         index = tokens_b.index(token)
 
-        #Check for features
+        # Check for features
         if token in features:
             f[features.index(token)]=1
             f_demo.append(token)
             if index > last_match:
+                # Add words not match into tokens_c for spell check.
                 tokens_c.append(''.join(tokens_b[last_match:index]))
+                #if DBG:    print ','.join(tokens_c)
             last_match=index+1
         else:
-            #Check for synonyms
+            # Check for synonyms
             for key, texts in synonyms.items():
-                if key not in f:
-                    if token in texts:
-                        f[key]=1
-                        f_demo.append(token)
-                        if index > last_match:
-                            tokens_c.append(''.join(tokens_b[last_match:index]))
-                        last_match=index+1
+                if key not in f and token in texts:
+                    f[key]=1
+                    f_demo.append(token)
+                    if index > last_match:
+                        tokens_c.append(''.join(tokens_b[last_match:index]))
+                    last_match=index+1
 
         if index == len(tokens_b)-1 and token not in f_demo:
             tokens_c.append(''.join(tokens_b[last_match:index+1]))
 
-    #Spell check.
-    #print 'robin',(',').join(tokens_c)
+    # Spell check.
+    #print 'robin', (',').join(tokens_c)
     if tokens_c:
         for token in tokens_c:
             s = SnowNLP(SnowNLP(token).han).pinyin
             s_check=[]
-            #features length from 2~4
+            # Features length from 2~4
+            # ex: 'abcde' => 'ab','abc','abcd','bc','bcd','bcde'...
             for i in range(1,4):
-                s_check+=([('').join(s[j:j+i+1]) for j in range(len(s)-1) if j+i < len(s)])
+                s_check += ([('').join(s[j:j+i+1]) for j in range(len(s)-1) if j+i < len(s)])
             for spell in s_check:
                 if spell in features_pinyin:
                     f[features_pinyin.index(spell)]=1
@@ -80,53 +88,41 @@ def list_feature(question,features,features_pinyin,mydict,synonyms,synonyms_piny
                             f[key]=1
                             f_demo.append(synonyms[key][0])
 
-    #print f_demo,'for "',question,'"'
+    p_label, p_acc, p_val = svm_predict([0], [f], m, '-b 1 -q')
+
     if DBG:
-        #print ','.join(features)
         print f
-        #print 'Matched :',(',').join(tokens_b)
         print 'Matched :',(',').join(f_demo)
 
-    #label,stats = make_prediction(api,f)
-    #y, x = [0], [{4:1, 26:1, 27:1}]
-    p_label, p_acc, p_val = svm_predict([0],[f],m,'-b 1 -q')
-    #print p_val,len(p_val)
-    #print p_label,p_val[0][int(p_label[0])-1]
-        #Print result
-
-    if DBG:
         elapsed_time = time.time() - start_time
         print 'Execution time : %.3f' % (elapsed_time)
         for i in range(len(p_val[0])):
-            if p_val[0][i]>0.025:
-                print i+1,mydict[i+1],p_val[0][i]
+            if p_val[0][i] > 0.025:
+                print i+1, mydict[i+1], p_val[0][i]
 
-        print '='*80
-        print 'You are asking :',mydict[p_label[0]]
-        print '='*80
-        """
-        for stat in stats:
-            if float(stat['score']) > 0.1 and float(stat['score'])<1:
-                print mydict[stat['label']],'score :',stat['score']
-        """
-        #Check matching result.
+        print '='*70
+        print 'You are asking :', mydict[p_label[0]]
+        print '='*70
+
+        # Check matching result for improving.
         match = raw_input("Does this question match?(y/n) ")
         result = []
         result.append([str(int(p_label[0])),question.decode('utf-8')])
         #print result
-        if match.lower()in YES:
+        if match.lower() in YES:
             with open('result_right.csv','a') as file:
                 w = UnicodeWriter(file)
                 w.writerows(result)
-        #TODO dealt with wrong guess
+
+        #TODO Dealt with wrong guess.
     return mydict[p_label[0]]
 
-#Get libsvm model.
 def get_model():
+    """Load Machine Learning model if exist, create one if not."""
     if not os.path.exists('question_chinese.model'):
         y, x = svm_read_problem('question_chinese1')
         m = svm_train(y, x, '-c 32.0 -g 0.0078125 -b 1')
-        #svm_save_model('question_chinese.model', m)
+        svm_save_model('question_chinese.model', m)
         return m
     else:
         m = svm_load_model('question_chinese.model')
@@ -136,71 +132,56 @@ def get_model():
         #print p_label,p_acc
         return m
 
-# Setting up the features for later matching.
 def init():
-
+    """Set up the features for later matching."""
+    # Load dictionary for banking.
     jieba.load_userdict('bankdict.txt')
-    for word in WORD:
-        jieba.add_word(word)
 
-    #Read the question database
+    # Read the question database.
     mydict = {}
-    with open('raw_question_chinese.csv', mode='r') as file:
-        #reader = csv.reader(file)
+    with open('raw_question_chinese.csv') as file:
         reader = UnicodeReader(file)
         mydict = {float(rows[0]):rows[1] for rows in reader}
-    file.close()
 
-    #Read the question database
+    # Read the synonyms database.
     synonyms = {}
-    with open('synonyms.csv', mode='r') as file:
+    with open('synonyms.csv') as file:
         reader = UnicodeReader(file)
-        synonyms = {int(float(rows[0]))+1:rows[1:] for rows in reader}
-    file.close()
+        synonyms = {int(float(rows[0]))+1 : rows[1:] for rows in reader}
 
+    # Load indexes which we use to classify questions.
     features = []
-    with open('question_chinese.csv', mode='r') as file:
+    with open('question_chinese.csv') as file:
         reader = UnicodeReader(file)
         for row in reader:
             features = row[:]
             break
-    file.close()
-    #print '\nfeatures are',features
 
-    features_pinyin = []
-    for feature in features:
-        #Translate feature into Simple Chinese then get how to spell it.
-        s = ''.join(SnowNLP(SnowNLP(feature).han).pinyin)
-        #print feature,s
-        features_pinyin.append(s)
+    # Process feature by NLP to know how to spell it.
+    # And use it for spell check later.
+    features_pinyin = [''.join(SnowNLP(SnowNLP(feature).han).pinyin) for feature in features]
 
-    synonyms_pinyin={}
+    synonyms_pinyin = {}
     for key, texts in synonyms.items():
         synonyms_pinyin[key] = [''.join(SnowNLP(SnowNLP(text).han).pinyin) for text in texts]
 
-    return mydict,synonyms,synonyms_pinyin,features,features_pinyin
+    return mydict, synonyms, synonyms_pinyin, features, features_pinyin
 
 def main():
-    mydict,synonyms,synonyms_pinyin,features,features_pinyin = init()
+    #mydict,synonyms,synonyms_pinyin,features,features_pinyin = init()
+    init_value = init()
+    mydict = init_value[0]
     m = get_model()
 
-    #print mydict
-    #print ("\n").join(mydict.values())
-    #print synonyms
-    #for list in synonyms.values():
-    #    print (",").join(list)
+    # Make a predicition to check system status OK.
+    list_feature(mydict[20],init_value,m,False)
 
-    #Make a predicition to check system status OK
-    list_feature(mydict[20],features,features_pinyin,mydict,synonyms,synonyms_pinyin,m,False)
-    #for q in mydict.values():
-    #    list_feature(q,features,mydict,synonyms,False)
-
-    #Start answering question
+    # Start answering questions.
     while True:
         question = raw_input("\nAsk me a question : ")
         if question == 'exit':
             break
-        list_feature(question.replace(' ',''),features,features_pinyin,mydict,synonyms,synonyms_pinyin,m,True)
+        list_feature(question.replace(' ',''),init_value,m,True)
 
 class UTF8Recoder:
     def __init__(self, f, encoding):
@@ -215,9 +196,9 @@ class UnicodeReader:
         f = UTF8Recoder(f, encoding)
         self.reader = csv.reader(f, dialect=dialect, **kwds)
     def next(self):
-        '''next() -> unicode
+        """next() -> unicode
         This function reads and returns the next line as a Unicode string.
-        '''
+        """
         row = self.reader.next()
         return [unicode(s, "utf-8") for s in row]
     def __iter__(self):
@@ -230,9 +211,9 @@ class UnicodeWriter:
         self.stream = f
         self.encoder = codecs.getincrementalencoder(encoding)()
     def writerow(self, row):
-        '''writerow(unicode) -> None
+        """writerow(unicode) -> None
         This function takes a Unicode string and encodes it to the output.
-        '''
+        """
         self.writer.writerow([s.encode("utf-8") for s in row])
         data = self.queue.getvalue()
         data = data.decode("utf-8")
